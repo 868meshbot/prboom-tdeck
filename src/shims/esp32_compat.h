@@ -28,7 +28,13 @@
 // <stddef.h> and <stdint.h> define size_t / uint32_t without touching stdbool.
 #include <stddef.h>
 #include <stdint.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void *heap_caps_malloc(size_t size, uint32_t caps);
+#ifdef __cplusplus
+}
+#endif
 #ifndef pvPortMallocCaps
 #  define pvPortMallocCaps(size, caps) heap_caps_malloc((size), (caps))
 #endif
