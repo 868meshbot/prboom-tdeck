@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            .pio
+          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+          restore-keys: |
+            pio-${{ runner.os }}-
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Download shareware WAD
+        run: curl -L -o doom1-cut.wad https://dl.espressif.com/dl/doom1-cut.wad
+
+      - name: Build firmware
+        run: pio run -e t-deck
+
+      - name: Check firmware size
+        run: |
+          FIRMWARE=".pio/build/t-deck/firmware.bin"
+          SIZE=$(wc -c < "$FIRMWARE")
+          echo "Firmware size: $SIZE bytes ($(( SIZE / 1024 )) KB)"
+          LIMIT=$(( 7 * 1024 * 1024 ))
+          if [ "$SIZE" -gt "$LIMIT" ]; then
+            echo "::error::Firmware ($SIZE bytes) exceeds OTA slot size ($LIMIT bytes)"
+            exit 1
+          fi
+
+      - name: Upload firmware artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prboom-tdeck-ci
+          path: .pio/build/t-deck/firmware.bin

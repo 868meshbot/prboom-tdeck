@@ -1,0 +1,133 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-firmware:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            .pio
+          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+          restore-keys: |
+            pio-${{ runner.os }}-
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PlatformIO
+        run: pip install platformio esptool
+
+      - name: Download shareware WAD
+        run: curl -L -o doom1-cut.wad https://dl.espressif.com/dl/doom1-cut.wad
+
+      - name: Build firmware
+        run: pio run -e t-deck
+
+      - name: Rename app binary
+        run: |
+          cp .pio/build/t-deck/firmware.bin \
+             .pio/build/t-deck/prboom-tdeck-${{ steps.version.outputs.VERSION }}.bin
+
+      - name: Build merged binary
+        run: |
+          BUILD=".pio/build/t-deck"
+          esptool.py --chip esp32s3 merge_bin \
+            -o "$BUILD/prboom-tdeck-${{ steps.version.outputs.VERSION }}-merged.bin" \
+            --flash_mode dio \
+            --flash_size 16MB \
+            0x0      "$BUILD/bootloader.bin" \
+            0x8000   "$BUILD/partitions.bin" \
+            0x10000  "$BUILD/firmware.bin"
+
+      - name: Generate checksums
+        run: |
+          cd .pio/build/t-deck
+          sha256sum prboom-tdeck-*.bin > checksums-sha256.txt
+          cat checksums-sha256.txt
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: prboom-tdeck-${{ steps.version.outputs.VERSION }}
+          path: |
+            .pio/build/t-deck/prboom-tdeck-*.bin
+            .pio/build/t-deck/checksums-sha256.txt
+
+  create-release:
+    needs: build-firmware
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: prboom-tdeck-${{ steps.version.outputs.VERSION }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            prboom-tdeck-*.bin
+            checksums-sha256.txt
+          draft: true
+          generate_release_notes: true
+          body: |
+            ## prboom-tdeck v${{ steps.version.outputs.VERSION }}
+
+            Doom for the LilyGo T-Deck Plus. Shareware WAD embedded — no separate flash step needed.
+
+            ### Firmware files
+
+            | File | Purpose |
+            |------|---------|
+            | `prboom-tdeck-${{ steps.version.outputs.VERSION }}.bin` | App only. Flash at `0x10000`. Use for OTA / M5Launcher. |
+            | `prboom-tdeck-${{ steps.version.outputs.VERSION }}-merged.bin` | Bootloader + partitions + app. Flash at `0x0`. First-time or full recovery. |
+
+            ### Flash instructions
+
+            **Via M5Launcher:** copy `prboom-tdeck-${{ steps.version.outputs.VERSION }}.bin` to SD card and install from launcher.
+
+            **First-time / recovery (merged):**
+            ```
+            esptool.py --chip esp32s3 --port /dev/ttyUSB0 \
+              write_flash 0x0 prboom-tdeck-${{ steps.version.outputs.VERSION }}-merged.bin
+            ```
+
+            **OTA slot only:**
+            ```
+            esptool.py --chip esp32s3 --port /dev/ttyUSB0 \
+              write_flash 0x10000 prboom-tdeck-${{ steps.version.outputs.VERSION }}.bin
+            ```
+
+            ### Notes
+            - Shareware Episode 1 only (`doom1-cut.wad` by Espressif)
+            - No sound
+            - NVS partition is shared safely with other M5Launcher firmwares
