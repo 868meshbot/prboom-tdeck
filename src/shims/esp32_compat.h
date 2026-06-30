@@ -22,19 +22,13 @@
 #pragma once
 
 // pvPortMallocCaps was removed; heap_caps_malloc is the replacement.
-#include "esp_heap_caps.h"
+// Forward-declare only — including esp_heap_caps.h drags in <stdbool.h> which
+// defines false/true as macros, breaking doomtype.h's:
+//   typedef enum {false, true} boolean;
+// <stddef.h> and <stdint.h> define size_t / uint32_t without touching stdbool.
+#include <stddef.h>
+#include <stdint.h>
+extern void *heap_caps_malloc(size_t size, uint32_t caps);
 #ifndef pvPortMallocCaps
 #  define pvPortMallocCaps(size, caps) heap_caps_malloc((size), (caps))
-#endif
-
-// esp_heap_caps.h pulls in <stdbool.h> which defines false/true as macros.
-// doomtype.h later does: typedef enum {false, true} boolean;
-// After macro expansion that becomes typedef enum {0, 1} boolean; — a syntax
-// error.  Undefine the macros here so the enum declaration stays valid.
-// Doom code uses the boolean type consistently, so 0/1 semantics are preserved.
-#ifdef false
-#  undef false
-#endif
-#ifdef true
-#  undef true
 #endif

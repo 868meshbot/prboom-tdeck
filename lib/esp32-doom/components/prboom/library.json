@@ -1,0 +1,14 @@
+{
+  "name": "prboom",
+  "version": "0.0.1",
+  "license": "GPL-2.0",
+  "build": {
+    "srcDir": ".",
+    "includeDir": "include",
+    "srcFilter": [
+      "+<*.c>",
+      "-<native/>"
+    ],
+    "flags": ["-Wno-implicit-function-declaration", "-Wno-unused-variable"]
+  }
+}
