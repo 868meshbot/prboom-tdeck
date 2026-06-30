@@ -1,0 +1,3 @@
+[submodule "lib/esp32-doom"]
+	path = lib/esp32-doom
+	url = https://github.com/espressif/esp32-doom

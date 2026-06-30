@@ -1,2 +1,12 @@
+# PlatformIO build output
 .pio/
+
+# Firmware binaries (downloaded or built locally)
+*.bin
+*.bin.gz
+
+# WAD file — downloaded at build time by CI; not committed
 doom1-cut.wad
+
+# macOS
+.DS_Store
