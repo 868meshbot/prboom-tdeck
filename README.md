@@ -94,9 +94,13 @@ NVS, otadata and phy_init are at the same offsets the bmorcelli launcher protect
 
 ---
 
+## Licence
+
+This project is distributed under the **GNU General Public License v2 or later** (GPL-2.0-or-later), following PrBoom.
+
 ## Credits
 
-- [PrBoom](https://prboom.sourceforge.net/) — Colin Phipps, Florian Schulze et al., GNU GPL v2
-- [esp32-doom](https://github.com/espressif/esp32-doom) — Espressif Systems, Apache 2.0
-- [openmeshos-868](https://github.com/OpenMeshOS/openmeshos-868) — hardware drivers and board shims (Board.cpp, Display.cpp)
-- id Software — DOOM engine, shareware WAD
+- [PrBoom](https://prboom.sourceforge.net/) — Colin Phipps, Florian Schulze et al. — GNU GPL v2
+- [esp32-doom](https://github.com/espressif/esp32-doom) — Espressif Systems (wrapper and compat layer around PrBoom) — Apache 2.0 / GPL v2
+- [openmeshos-868](https://github.com/OpenMeshOS/openmeshos-868) — hardware drivers and board shims (Board.cpp, Display.cpp) — MIT
+- id Software — DOOM engine and shareware WAD
