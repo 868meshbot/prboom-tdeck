@@ -48,8 +48,11 @@ jobs:
             exit 1
           fi
 
+      - name: Rename firmware
+        run: cp .pio/build/t-deck/firmware.bin .pio/build/t-deck/prboom-tdeck.bin
+
       - name: Upload firmware artifact
         uses: actions/upload-artifact@v4
         with:
           name: prboom-tdeck-ci
-          path: .pio/build/t-deck/firmware.bin
+          path: .pio/build/t-deck/prboom-tdeck.bin
